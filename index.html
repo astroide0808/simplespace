@@ -3,6 +3,7 @@
     <head>
         <audio id="shoot-sound" src="shooting-sound.wav" preload="auto"></audio>
         <audio id="explode-sound" src="explosion.wav" preload="auto"></audio>
+        <audio id="hurt-sound" src="hurt.wav" preload="auto"></audio>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
@@ -71,8 +72,9 @@
     var left = false
     var right = false
     var lefte = 0
-    
+    var health = 2
     var tope = 0
+    var hurt_c = 0
     var player_po = []
     var speed = 0
     var initial_speed = 0.5
@@ -107,7 +109,8 @@
                 difficulty = 7
             } else {
                 difficulty += _delta/60
-        }
+            }
+            hurt_c -= _delta
         }
        
         
@@ -137,6 +140,12 @@
             player_a = 0
         }
         var s = Math.sin(player_a)/5 + 1
+        if (hurt_c > 0 ) {
+            s = Math.sin(player_a*7) + 0.5
+        }
+        if (health == 0 ) {
+            dead = 1
+        }
         
         getCanvasOffsets()
         ctx.strokeStyle = "lime";
@@ -167,7 +176,9 @@
         if (y < 10) {
             y = 10
         }
-        
+        if (hurt_c > 2.2) {
+            shakeCanvas(10,10)
+        }
         
         vy = vy * 0.95
         vx = vx * 0.95
@@ -190,6 +201,7 @@
         
         
         ctx.strokeStyle = "white";
+        
         ctx.fillText("Score : " + String(score),30,canvas.height-20);
         point = [x + (10*Math.sin((rd)*Math.PI/180))*s ,(y - (10*Math.cos(-(rd)*Math.PI/180))*s)]
         ctx.strokeStyle = "white";
@@ -254,7 +266,15 @@
            asteroids[i][1] = asteroids[i][1] + (asteroids[i][3]*(60/(1/_delta)))
            asteroids[i][4] += 1
            if (Math.sqrt((asteroids[i][0]-x)**2 + (asteroids[i][1]-y)**2 ) < 20*asteroids[i][5]) {
-                dead = 1
+                if (hurt_c < 0) {
+                    health -= 1
+                    hurt_c = 2.5
+                    var shootSound = document.getElementById('hurt-sound');
+                    shootSound.currentTime = 0
+                    shootSound.play();
+                }
+                
+
             }
            if (asteroids[i][5] < 1 ) {
                 for (let e = 1 ; e < 10 ; e++) {
@@ -298,7 +318,10 @@
         for (let i = 0; i < par_del.length; i++) {
             particles.splice(par_del[i],1)
         }
-
+        ctx.fillStyle = "lime";
+        ctx.fillRect(canvas.width-150,canvas.height-40,100*(health/2),20)
+        ctx.rect(canvas.width-152.5,canvas.height-42.5,105,25)
+        ctx.stroke();
     }
     function getCanvasOffsets() {
         const rect = canvas.getBoundingClientRect();
@@ -313,6 +336,7 @@
             update_player()
             requestAnimationFrame(loop);
         }else {
+            ctx.fillStyle = "white"
             ctx.font = "50px Pixelify Sans"
             ctx.fillText("Game Over" ,(canvas.width/2)-120,canvas.height/2);
             ctx.font = "25px Pixelify Sans"
@@ -332,7 +356,6 @@
             latest = time
             var dif = latest - prev
             prev = time
-            
             return dif/1000
             
             
@@ -351,7 +374,17 @@
         ctx.stroke();
         ctx.closePath();
     }
-    
+    function shakeCanvas(duration, intensity) {
+    const start = Date.now();
+    (function shake() {
+        if (Date.now() - start < duration) {
+            canvas.style.transform = `translate(${(Math.random() - 0.5) * intensity}px, ${(Math.random() - 0.5) * intensity}px)`;
+            requestAnimationFrame(shake);
+        } else {
+            canvas.style.transform = 'translate(0, 0)';
+        }
+    })();
+}
 
     function asteroid_drawer(astx,asty,vastx,vasty,angle,si){
         ctx.lineWidth = 2;
@@ -463,7 +496,9 @@
             difficulty = 0
             projectiles = []
             score = 0
+            health = 2
             requestAnimationFrame(loop);
+            hurt_c = 0
         }
     })
 </script>
