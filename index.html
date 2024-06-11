@@ -115,7 +115,7 @@
             var rot = Math.floor(Math.random()*360)
             var rotrad = rot*(Math.PI/180)
             var m = Math.floor(Math.random()*3) + 1 + difficulty
-            var size = Math.floor(Math.random()*2) + 1
+            var size = (Math.random()*1.5) + 1
             if (e == 0 ) {
                 asteroids.push([Math.floor(Math.random()*canvas.width),-20,Math.sin(rotrad)*m,Math.cos(rotrad)*m,rot,size])
             }
