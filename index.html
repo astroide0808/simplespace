@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <audio id="shoot-sound" src="shooting-sound.wav" preload="auto"></audio>
+        <audio id="explode-sound" src="explosion.wav" preload="auto"></audio>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+        <style>
+            h1 {
+                color: aqua;
+            }
+            .myCanvas {
+                border:1px solid #d3d3d3;
+                background-color: #000000;
+                padding-left: 0;
+                padding-right: 0;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .canvas_prop {
+                display: flex;
+                padding-left: 0;
+                padding-right: 0;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .Player {
+                rotate: 0.5;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div style="display:none;">
+            <img id="Player" src="Player.png" class="Player">
+        </div>
+        <div class="canvas_prop"><canvas id="myCanvas" width="600" height="450" class="myCanvas"></canvas></div>
+    </body>
+</html>
+<script>
+    var score = 0
+    var difficulty = 0
+    var seconds = 0
+    var _delta = 0
+    var cooldown = 1
+    var once = 0
+    var prev = 0
+    var latest = 0
+    var player_a = 0
+    var point = [0,0]
+    var small_ast = []
+    var del = []
+    var astdel = []
+    var projectiles = []
+    var asteroids = []
+    var particles = []
+    var par_del = []
+    var enemies = []
+    var mousex = 0
+    var mousey = 0
+    var rd = 0
+    var vx = 0
+    var vy = 0
+    var x = 0
+    var y = 0
+    var dead = 0
+    var down = false 
+    var up = false
+    var left = false
+    var right = false
+    var lefte = 0
+    
+    var tope = 0
+    var player_po = []
+    var speed = 0
+    var initial_speed = 0.5
+    speed = initial_speed
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+    ctx.shadowColor="white";
+    
+    ctx.strokeStyle = "lime";
+    
+    x = canvas.width/2 + 10
+    y = canvas.height/2 + 10
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.shadowBlur = 8;
+    ctx.font = "25px Pixelify Sans"
+    function update_player() {
+        
+        
+        _delta = delta()
+        
+        player_po.push([x,y])
+        if (player_po.length > 15) {
+            player_po.splice(0,1)
+        }
+        speed = (initial_speed)*(60/(1/(_delta)))
+        if (_delta > 0)  {
+            seconds = seconds + _delta
+            if (difficulty > 7) {
+                difficulty = 7
+            } else {
+                difficulty += _delta/60
+        }
+        }
+       
+        
+        if (seconds > cooldown - (difficulty/10) ) {
+            seconds = 0
+            var e = Math.floor(Math.random()*4)
+            var rot = Math.floor(Math.random()*360)
+            var rotrad = rot*(Math.PI/180)
+            var m = Math.floor(Math.random()*3) + 1 + difficulty
+            var size = Math.floor(Math.random()*2) + 1
+            if (e == 0 ) {
+                asteroids.push([Math.floor(Math.random()*canvas.width),-20,Math.sin(rotrad)*m,Math.cos(rotrad)*m,rot,size])
+            }
+            if (e == 1 ) {
+                asteroids.push([Math.floor(Math.random()*canvas.width),canvas.height+20,Math.sin(rotrad)*m,Math.cos(rotrad)*m,rot,size])
+            }
+            if (e == 2 ) {
+                asteroids.push([-20,Math.floor(Math.random()*canvas.height),Math.sin(rotrad)*m,Math.cos(rotrad)*m,rot,size])
+            }
+            if (e == 3) {
+                asteroids.push([canvas.width+20,Math.floor(Math.random()*canvas.height),Math.sin(rotrad)*m,Math.cos(rotrad)*m,rot,size])
+            }
+        }
+        if (player_a < Math.PI ) {
+            player_a += 0.05
+        } else {
+            player_a = 0
+        }
+        var s = Math.sin(player_a)/5 + 1
+        
+        getCanvasOffsets()
+        ctx.strokeStyle = "lime";
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (down == true) {
+            vy += speed
+        }
+        if (up == true) {
+            vy -= speed
+        }
+        if (right == true) {
+            vx += speed
+        }
+        if (left == true) {
+            vx -= speed
+        }
+        x = x + vx
+        y = y + vy
+        if (x > canvas.width ) {
+            x = canvas.width 
+        }
+        if (x < 10) {
+            x = 10
+        }
+        if (y > canvas.height  ) {
+            y = canvas.height 
+        }
+        if (y < 10) {
+            y = 10
+        }
+        
+        
+        vy = vy * 0.95
+        vx = vx * 0.95
+        if (mousex > x+lefte) {
+            rd = (Math.atan((mousey-(y+tope))/(mousex-(x+lefte))))*(180/Math.PI) + 90
+        }
+        if (mousex < x+lefte) {
+            rd = (Math.atan((mousey-(y+tope))/(mousex-(x+lefte))))*(180/Math.PI) + 270
+        }
+        
+        player_drawer(s);
+        var l = Math.sqrt(vx**2 + vy**2)
+        for (let i = 0 ; i < player_po.length ; i++) {
+            ctx.fillStyle = "lime";
+            ctx.beginPath();
+            ctx.arc(player_po[i][0],player_po[i][1],l*i/30, 0, 2 * Math.PI);
+            ctx.fill();
+            
+        }
+        
+        
+        ctx.strokeStyle = "white";
+        ctx.fillText("Score : " + String(score),30,canvas.height-20);
+        point = [x + (10*Math.sin((rd)*Math.PI/180))*s ,(y - (10*Math.cos(-(rd)*Math.PI/180))*s)]
+        ctx.strokeStyle = "white";
+        ctx.fillStyle = "white";
+        del = []
+        astdel = []
+        small_ast = []
+        par_del = []
+        for (let i = 0; i < projectiles.length; i++) {
+            ctx.fillStyle = 'lime'
+            var once = 0
+            ctx.fillRect(projectiles[i][1][0]+((projectiles[i][0][0])*(60/(1/_delta))),projectiles[i][1][1]+((projectiles[i][0][1])*(60/(1/_delta))),3,3)
+            projectiles[i][1][0] = projectiles[i][1][0]+((projectiles[i][0][0])*(60/(1/_delta)))
+            projectiles[i][1][1] = projectiles[i][1][1]+((projectiles[i][0][1])*(60/(1/_delta)))
+            if (projectiles[i][1][0] > canvas.width || projectiles[i][1][0] < 0 || projectiles[i][1][1] < 0 || projectiles[i][1][1] > canvas.height ) {
+                del.push(i)
+                once = 1
+            }
+            ctx.fillStyle = "white";
+            for (let e = 0; e < asteroids.length; e++) {
+                if (Math.sqrt((asteroids[e][0]-projectiles[i][1][0])**2 + (asteroids[e][1]-projectiles[i][1][1])**2 ) < 20*asteroids[e][5])
+                    if (once == 0 ) {
+                        del.push(i)
+                        astdel.push(e)
+                        var shootSound = document.getElementById('explode-sound');
+                        shootSound.currentTime = 0
+                        var randomPitch = 0.75 + Math.random() * 2; // Random pitch between 0.75 and 1.25
+                        shootSound.playbackRate = randomPitch;
+                        shootSound.play();
+                        if (asteroids[e][5] >= 1  )  {
+                            if ((Math.random()) > 0.5) {
+                                for (let g = 0 ; g < 3 ; g++ ) {
+                                        var rot = Math.floor(Math.random()*360)
+                                        var rotrad = rot*(Math.PI/180)
+                                        var si = Math.floor(Math.random()*0.3) + 0.3
+                                        small_ast.push([asteroids[e][0],asteroids[e][1],Math.sin(rotrad)*3,Math.cos(rotrad)*3,asteroids[e][4],si])
+                                        
+                                }
+                            }
+                            score += 100
+                        } else {
+                            score += 200
+                        }
+                        for (let g = 0 ; g < 3 ; g++ ) {
+                            var rot = Math.floor(Math.random()*360)
+                            var rotrad = rot*(Math.PI/180)
+                            var si = Math.floor(Math.random()*0.4) + 0.5
+                            particles.push([asteroids[e][0],asteroids[e][1],Math.sin(rotrad)*2,Math.cos(rotrad)*2,asteroids[e][4],si])
+                        }
+                    }
+                
+            }
+        }
+        for (let i = 0; i < del.length; i++) {
+            projectiles.splice(del[i],1)
+        }
+        for (let i = 0; i < asteroids.length; i++) {
+           asteroid_drawer(asteroids[i][0],asteroids[i][1],asteroids[i][2],asteroids[i][3],asteroids[i][4],asteroids[i][5])
+           asteroids[i][0] = asteroids[i][0] + (asteroids[i][2]*(60/(1/_delta)))
+           asteroids[i][1] = asteroids[i][1] + (asteroids[i][3]*(60/(1/_delta)))
+           asteroids[i][4] += 1
+           if (Math.sqrt((asteroids[i][0]-x)**2 + (asteroids[i][1]-y)**2 ) < 20*asteroids[i][5]) {
+                dead = 1
+            }
+           if (asteroids[i][5] < 1 ) {
+                for (let e = 1 ; e < 10 ; e++) {
+                    ctx.fillRect(asteroids[i][0]-(asteroids[i][2]*e)-0.6,asteroids[i][1]-(asteroids[i][3]*e)-0.6,(10-e)/5,(10-e)/5)
+                }
+           }
+           if (asteroids[i][0] >= canvas.width+60 || asteroids[i][0] <= -60|| asteroids[i][1] <= -60 || asteroids[i][1] >= canvas.height + 60 ) {
+                if (asteroids[i][5] >= 1 ) {
+                    asteroids[i][0] =  asteroids[i][0]-((asteroids[i][0]-((canvas.width)/2))*2)
+                    asteroids[i][1] = asteroids[i][1]-((asteroids[i][1]-((canvas.height)/2))*2)
+                    asteroids[i][2] += Math.sin(Math.floor(Math.random()*360)*Math.PI/180)
+                    asteroids[i][3] += Math.cos(Math.floor(Math.random()*360)*Math.PI/180)
+                    if (Math.abs(asteroids[i][2]) > 5 ) {
+                        asteroids[i][2] = 5*(Math.abs(asteroids[i][2])/asteroids[i][2])
+                    }
+                    if (Math.abs(asteroids[i][3]) > 5 ) {
+                        asteroids[i][3] = 5*(Math.abs(asteroids[i][3])/asteroids[i][3])
+                    }
+                } else {
+                    astdel.push(i)
+                }
+                
+           }
+        }
+        for (let i = 0; i < astdel.length; i++) {
+            asteroids.splice(astdel[i],1)
+        }
+        for (let i = 0; i < small_ast.length; i++) {
+            asteroids.push(small_ast[i])
+        }
+       
+        for (let i = 0; i < particles.length; i++) {
+            asteroid_drawer(particles[i][0],particles[i][1],particles[i][2],particles[i][3],particles[i][4],particles[i][5])
+            particles[i][0] = particles[i][0] + (particles[i][2]*(60/(1/_delta)))
+            particles[i][1] = particles[i][1] + (particles[i][3]*(60/(1/_delta)))
+            particles[i][5] = particles[i][5] - (0.04*(60/(1/_delta)))
+            if (particles[i][5] < 0 ) {
+                par_del.push(i)
+            }
+        }
+        for (let i = 0; i < par_del.length; i++) {
+            particles.splice(par_del[i])
+        }
+
+    }
+    function getCanvasOffsets() {
+        const rect = canvas.getBoundingClientRect();
+
+        lefte = rect.left;
+        tope = rect.top;
+        
+    }
+    requestAnimationFrame(loop);
+    function loop() {
+        if (dead == 0) {
+            update_player()
+            requestAnimationFrame(loop);
+        }else {
+            ctx.font = "50px Pixelify Sans"
+            ctx.fillText("Game Over" ,(canvas.width/2)-120,canvas.height/2);
+        }
+        
+    
+    }
+    function delta() {
+        const d = new Date();
+        let time = d.getTime()
+        
+        if (once == 0 ) {
+            once = 1
+            prev = time
+        } else {
+            latest = time
+            var dif = latest - prev
+            prev = time
+            
+            return dif/1000
+            
+            
+        }
+    }
+    function player_drawer(s) {
+        ctx.lineWidth = 1;
+        ctx.shadowColor = "green";
+        ctx.beginPath();
+        ctx.moveTo(x,y)
+        ctx.lineTo(x + (10*Math.sin((rd)*Math.PI/180))*s ,(y - (10*Math.cos(-(rd)*Math.PI/180))*s));
+        ctx.lineTo(x + (8*Math.sin((120+rd)*Math.PI/180))*s,(y - (8*Math.cos((120+rd)*Math.PI/180))*s));
+        ctx.lineTo(x,y)
+        ctx.lineTo(x + (8*Math.sin((-120+rd)*Math.PI/180))*s,(y - (8*Math.cos((-120+rd)*Math.PI/180))*s));
+        ctx.lineTo(x + (10*Math.sin((rd)*Math.PI/180))*s,(y - (10*Math.cos(-(rd)*Math.PI/180))*s));
+        ctx.stroke();
+        ctx.closePath();
+    }
+    function asteroid_drawer(astx,asty,vastx,vasty,angle,si){
+        ctx.lineWidth = 2;
+        new_po = [astx+vastx,asty+vasty]
+        ctx.shadowColor = "gray";
+        
+        ctx.moveTo(new_po[0],new_po[1])
+        ctx.beginPath();
+        var e = Math.PI/180
+        if (si > 0.95 ) {
+            ctx.lineTo(new_po[0] + (22*si*Math.sin(angle*e)) ,(new_po[1] - (22*si*Math.cos(-angle*e))));
+            ctx.lineTo(new_po[0] + (22*si*Math.sin((45+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+45)*e))));
+            ctx.lineTo(new_po[0] + (22*si*Math.sin((160+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+160)*e))));
+            ctx.lineTo(new_po[0] + (22*si*Math.sin((230+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+230)*e))));
+            ctx.lineTo(new_po[0] + (22*si*Math.sin((270+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+270)*e))));
+            ctx.lineTo(new_po[0] + (8*si*Math.sin((320+angle)*e)) ,(new_po[1] - (8*si*Math.cos(-(angle+320)*e))));
+            ctx.lineTo(new_po[0] + (22*si*Math.sin(angle*e)) ,(new_po[1] - (22*si*Math.cos(-angle*e))));
+        } else {
+            ctx.lineTo(new_po[0] + (22*si*Math.sin(angle*e)) ,(new_po[1] - (22*si*Math.cos(-angle*e))));
+            ctx.lineTo(new_po[0] + (22*si*Math.sin((120+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+120)*e))));
+            ctx.lineTo(new_po[0] + (22*si*Math.sin((-120+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle-120)*e))));
+            ctx.lineTo(new_po[0] + (22*si*Math.sin(angle*e)) ,(new_po[1] - (22*si*Math.cos(-angle*e))));
+        }
+        
+        ctx.stroke();
+        ctx.closePath();
+    }
+    document.addEventListener('keydown', function(event) {
+        if(event.keyCode == 83) {
+           down = true;
+        }
+        
+    });
+    document.addEventListener('keyup', function(event) {
+        if(event.keyCode == 83) {
+           down = false;
+        }
+        
+    });
+    document.addEventListener('keydown', function(event) {
+        if(event.keyCode == 87 || event.keyCode == 90 )  {
+           up = true;
+        }
+        
+    });
+    document.addEventListener('keyup', function(event) {
+        if(event.keyCode == 87 || event.keyCode == 90 ) {
+           up = false;
+        }
+        
+    });
+    document.addEventListener('keydown', function(event) {
+        if(event.keyCode == 68)  {
+           right = true;
+        }
+        
+    });
+    document.addEventListener('keyup', function(event) {
+        if(event.keyCode == 68) {
+           right = false;
+        }
+        
+    });
+    document.addEventListener('keydown', function(event) {
+        if(event.keyCode == 81 || event.keyCode == 65 )  {
+           left = true;
+        }
+        
+    });
+    document.addEventListener('keyup', function(event) {
+        if(event.keyCode == 81 || event.keyCode == 65 ) {
+           left = false;
+        }
+        
+    });
+    document.addEventListener('mousemove', (event) => {
+        mousex = event.clientX;
+        mousey = event.clientY;
+        
+        
+    });
+    document.addEventListener('click',function(event) {
+        
+        var shootSound = document.getElementById('shoot-sound');
+        shootSound.currentTime = 0
+        shootSound.play();
+        projectiles.push([[Math.sin((rd)*Math.PI/180)*10,-Math.cos((rd)*Math.PI/180)*10 ],[point[0],point[1]]])
+        
+    })
+</script>
