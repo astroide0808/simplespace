@@ -91,7 +91,9 @@
     ctx.font = "25px Pixelify Sans"
     function update_player() {
         
-        
+        if (score < 0) {
+            score = 0
+        }
         _delta = delta()
         
         player_po.push([x,y])
@@ -115,7 +117,7 @@
             var rot = Math.floor(Math.random()*360)
             var rotrad = rot*(Math.PI/180)
             var m = Math.floor(Math.random()*3) + 1 + difficulty
-            var size = (Math.random()*1.5) + 1
+            var size = Math.floor(Math.random()*2) + 1
             if (e == 0 ) {
                 asteroids.push([Math.floor(Math.random()*canvas.width),-20,Math.sin(rotrad)*m,Math.cos(rotrad)*m,rot,size])
             }
@@ -197,6 +199,7 @@
         small_ast = []
         par_del = []
         for (let i = 0; i < projectiles.length; i++) {
+            
             ctx.fillStyle = 'lime'
             var once = 0
             ctx.fillRect(projectiles[i][1][0]+((projectiles[i][0][0])*(60/(1/_delta))),projectiles[i][1][1]+((projectiles[i][0][1])*(60/(1/_delta))),3,3)
@@ -205,6 +208,7 @@
             if (projectiles[i][1][0] > canvas.width || projectiles[i][1][0] < 0 || projectiles[i][1][1] < 0 || projectiles[i][1][1] > canvas.height ) {
                 del.push(i)
                 once = 1
+                
             }
             ctx.fillStyle = "white";
             for (let e = 0; e < asteroids.length; e++) {
@@ -292,7 +296,7 @@
             }
         }
         for (let i = 0; i < par_del.length; i++) {
-            particles.splice(par_del[i])
+            particles.splice(par_del[i],1)
         }
 
     }
@@ -311,6 +315,8 @@
         }else {
             ctx.font = "50px Pixelify Sans"
             ctx.fillText("Game Over" ,(canvas.width/2)-120,canvas.height/2);
+            ctx.font = "25px Pixelify Sans"
+            ctx.fillText("click anywhere to restart" ,(canvas.width/2)-160,(canvas.height/2) + 20);
         }
         
     
@@ -345,6 +351,8 @@
         ctx.stroke();
         ctx.closePath();
     }
+    
+
     function asteroid_drawer(astx,asty,vastx,vasty,angle,si){
         ctx.lineWidth = 2;
         new_po = [astx+vastx,asty+vasty]
@@ -359,8 +367,16 @@
             ctx.lineTo(new_po[0] + (22*si*Math.sin((160+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+160)*e))));
             ctx.lineTo(new_po[0] + (22*si*Math.sin((230+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+230)*e))));
             ctx.lineTo(new_po[0] + (22*si*Math.sin((270+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+270)*e))));
-            ctx.lineTo(new_po[0] + (8*si*Math.sin((320+angle)*e)) ,(new_po[1] - (8*si*Math.cos(-(angle+320)*e))));
+            if (si > 1.5) {
+                ctx.lineTo(new_po[0] + (13*si*Math.sin((320+angle)*e)) ,(new_po[1] - (13*si*Math.cos(-(angle+320)*e))));
+            } else {
+                ctx.lineTo(new_po[0] + (22*si*Math.sin((320+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+320)*e))));
+            }
+            
             ctx.lineTo(new_po[0] + (22*si*Math.sin(angle*e)) ,(new_po[1] - (22*si*Math.cos(-angle*e))));
+            ctx.fillRect(new_po[0] + (10*si*Math.sin(angle*e)),(new_po[1] - (10*si*Math.cos(-angle*e))),2,2)
+            ctx.fillRect(new_po[0] + (10*si*Math.sin((160+angle)*e)),(new_po[1] - (10*si*Math.cos(-((angle+160)*e)))),4,4)
+            ctx.fillRect(new_po[0] + (10*si*Math.sin((270+angle)*e)),(new_po[1] - (10*si*Math.cos(-((angle+270)*e)))),3,3)
         } else {
             ctx.lineTo(new_po[0] + (22*si*Math.sin(angle*e)) ,(new_po[1] - (22*si*Math.cos(-angle*e))));
             ctx.lineTo(new_po[0] + (22*si*Math.sin((120+angle)*e)) ,(new_po[1] - (22*si*Math.cos(-(angle+120)*e))));
@@ -426,11 +442,28 @@
         
     });
     document.addEventListener('click',function(event) {
-        
+        score -= 10
         var shootSound = document.getElementById('shoot-sound');
         shootSound.currentTime = 0
         shootSound.play();
+        console.log(rd)
+        vx += Math.sin((rd+180)*Math.PI/180)*2
+        vy -= Math.cos((rd+180)*Math.PI/180)*2
         projectiles.push([[Math.sin((rd)*Math.PI/180)*10,-Math.cos((rd)*Math.PI/180)*10 ],[point[0],point[1]]])
-        
+        if (dead == 1) {
+            dead = 0
+            x = canvas.width/2
+            y = canvas.height/2
+            vx = 0
+            vy = 0
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            asteroids = []
+            particles = []
+            small_ast = []
+            difficulty = 0
+            projectiles = []
+            score = 0
+            requestAnimationFrame(loop);
+        }
     })
 </script>
